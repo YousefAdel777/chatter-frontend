@@ -1,12 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: [
-    "@pqina/pintura", 
-    "@pqina/react-pintura",
-    "filerobot-image-editor",
-    "react-filerobot-image-editor"
-  ],
   images: {
     remotePatterns: [
       {

@@ -13,7 +13,7 @@ import inviteSchema, { InviteSchema } from "@/features/chats/schemas/inviteSchem
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createInvite } from "@/features/invites/actions";
 import { createMessages } from "@/features/messages/actions";
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_FRONTEND_URL;
+const BASE_URL = window.location.host;
 import InviteUrlModal from "./InviteUrlModal";
 
 type Props = {

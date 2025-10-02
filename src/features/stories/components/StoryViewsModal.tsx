@@ -24,7 +24,7 @@ const StoryViewsModal: React.FC<Props> = ({ closeModal, storyId }) => {
                 <h3 className="text-xl font-semibold text-center">Something went wrong.</h3>
                 :
                 !views || views?.length === 0 ?
-                <h3 className="text-xl font-semibold text-center">No views for this story.</h3>
+                <h3 className="text-sm text-center font-semibold text-muted">No views for this story</h3>
                 :
                 views?.map(view => (
                     <StoryView key={view.id} storyView={view} />

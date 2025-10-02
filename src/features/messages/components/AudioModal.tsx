@@ -22,7 +22,7 @@ const AudioModal: React.FC<Props> = ({ closeModal, replyMessageId, userId, chatI
     const [file, setFile] = useState<File | null>(null);
     const [filePreview, setFilePreview] = useState<string>("");
     const [isPending, startTransition] = useTransition();
-    const { mutateAfter, mutateBefore, hasMoreAfter, paginatedDataBefore, paginatedDataAfter } = useMessagesContext() as MessagesContextType;
+    const { mutateAfter, mutateBefore, hasMoreAfter, paginatedDataBefore, paginatedDataAfter } = useMessagesContext() ;
 
     const handleDrop = (acceptedFiles: File[]) => {
         if (acceptedFiles.length === 0) return;

@@ -15,7 +15,7 @@ const MenuButton = ({  isMenuOpen, disabled, children, setIsMenuOpen }: Props) =
             onBlur={() => setIsMenuOpen(false)}
             tabIndex={-1}
             disabled={disabled}
-            className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer hover:bg-black hover:bg-opacity-10 duration-200"
+            className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer hover:bg-black hover:bg-opacity-5 duration-200"
         >
             {children || <HiDotsHorizontal className="text-muted" />}
         </button>

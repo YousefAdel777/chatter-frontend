@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import useOnlineStatus from "../hooks/useOnlineStatus";
 import ChatLastMessage from "./ChatLastMessage";
 import useTypingUsers from "@/features/messages/hooks/useTypingUsers";
+import { GoMention } from "react-icons/go";
 
 type Props = {
     chat: Chat;
@@ -19,7 +20,7 @@ const Chat: React.FC<Props> = ({ chat, disabled }) => {
     const router = useRouter();
     const { isOnline } = useOnlineStatus(otherUser?.id);
     const isCurrentChat = pathname === `/chats/${chat.id}` || pathname === `/chats?userId=${otherUser?.id}`;
-    const { typingUsernames } = useTypingUsers(chat.id);
+    const { typingUsernames, typingUsers } = useTypingUsers(chat.id);
 
     const selectChat = () => {
         if (disabled) return;
@@ -36,11 +37,11 @@ const Chat: React.FC<Props> = ({ chat, disabled }) => {
             "cursor-pointer hover:bg-background-secondary": !disabled
         })}>
             <Avatar isOnline={isOnline} alt={chat.name || otherUser?.username || "Deleted user"} image={chat.image || otherUser?.image || "/user_image.webp"}  />
-            <div>
+            <div className="flex-1">
                 <h2 className="text-lg max-w-48 font-semibold truncate">{chat.name || otherUser?.username || "Deleted user"}</h2>
                 {
                     typingUsernames.length > 0 ?
-                    <p className="text-xs max-w-48 font-semibold truncate text-primary">{chat.chatType === "INDIVIDUAL" ? "Typing..." : `${typingUsernames} are typing...`}</p>
+                    <p className="text-xs max-w-48 font-semibold truncate text-primary">{chat.chatType === "INDIVIDUAL" ? "Typing..." : `${typingUsernames} ${typingUsers.length === 1 ? "is" : "are"} typing...`}</p>
                     :
                     chat.lastMessage ?
                     <ChatLastMessage message={chat.lastMessage} />
@@ -48,12 +49,18 @@ const Chat: React.FC<Props> = ({ chat, disabled }) => {
                     null
                 }
             </div>
-            {
-                chat.unreadMessagesCount > 0 &&
-                <div className="rounded-full ml-auto text-xs text-white flex items-center justify-center font-semibold min-w-5 min-h-5 bg-primary">
-                    {chat.unreadMessagesCount}
-                </div>
-            }
+            <div className="flex items-center justify-center flex-col gap-1.5">
+                {
+                    chat.isMentioned &&
+                    <GoMention size={18} className="text-primary" />
+                }
+                {
+                    chat.unreadMessagesCount > 0 &&
+                    <div className="rounded-full ml-auto text-xs text-white flex items-center justify-center font-semibold min-w-5 min-h-5 bg-primary">
+                        {chat.unreadMessagesCount}
+                    </div>
+                }
+            </div>
         </div>
     );
 }

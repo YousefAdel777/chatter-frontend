@@ -111,7 +111,7 @@ const CreateGroupModal: React.FC<Props> = ({ chat, closeModal }) => {
                     ({ getInputProps, getRootProps }) => {
                         return (
                             <div className="relative cursor-pointer w-fit mx-auto mb-4" {...getRootProps()} >
-                                <Avatar alt="Group image" image={filePreview || chat?.image || "/community_image.webp"} size={100} />
+                                <Avatar alt="Group image" image={filePreview || chat?.image || "/group_image.webp"} size={100} />
                                 <input {...getInputProps()} />
                                 <span className="absolute bottom-0 right-0 bg-background-ternary rounded-full">
                                     <IconButton>

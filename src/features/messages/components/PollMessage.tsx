@@ -14,7 +14,7 @@ type Props = {
 
 const PollMessage: React.FC<Props> = ({ message }) => {
 
-    const { mutateAfter, mutateBefore, paginatedDataAfter, paginatedDataBefore } = useMessagesContext() as MessagesContextType;
+    const { mutateAfter, mutateBefore, paginatedDataAfter, paginatedDataBefore } = useMessagesContext() ;
 
     const ended = !!message.endsAt && new Date(message.endsAt) < new Date();
     const { data: session } = useSession();

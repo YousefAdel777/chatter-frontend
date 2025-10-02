@@ -100,7 +100,7 @@ export const options: NextAuthConfig = {
 
             try {
                 const res = await refreshToken(token.refreshToken as string);
-                if (res.error) throw new Error("Token refresh failed");
+                if (res.error) return null;
 
                 return {
                     ...token,

@@ -28,7 +28,7 @@ const AddAttachmentModal: React.FC<Props> = ({ userId, chatId, closeModal, reply
     const [files, setFiles] = useState<File[]>([]);
     const [filePreviews, setFilePreviews] = useState<string[]>([]);
     const [isPending, startTransition] = useTransition();
-    const { paginatedDataAfter, paginatedDataBefore, hasMoreAfter, mutateAfter, mutateBefore } = useMessagesContext() as MessagesContextType;
+    const { paginatedDataAfter, paginatedDataBefore, hasMoreAfter, mutateAfter, mutateBefore } = useMessagesContext();
 
     const handleDrop = (acceptedFiles: File[]) => {
         setFiles(prevState => [...acceptedFiles, ...prevState]);

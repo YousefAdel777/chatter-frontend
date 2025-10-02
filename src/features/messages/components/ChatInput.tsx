@@ -1,60 +1,70 @@
 "use client";
 
 import IconButton from "@/features/common/components/IconButton";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { FiMic, FiSend, FiSmile, FiX } from "react-icons/fi";
 import MessageInputMenu from "./MessageInputMenu";
-import { batchUpdateMessagesMutation, createMessageMutationAfter, createMessageMutationBefore, deleteMessageMutation, updateMessageMutation } from "../mutations";
-import { Client } from "@stomp/stompjs";
+import { createMessageMutationAfter, createMessageMutationBefore, updateMessageMutation } from "../mutations";
 import { useSession } from "next-auth/react";
 import SelectedMessage from "./SelectedMessage";
-import Picker, { EmojiStyle, Theme } from 'emoji-picker-react';
+import Picker, { EmojiClickData, EmojiStyle, Theme } from 'emoji-picker-react';
 import Recorder from "./Recorder";
 import { useTheme } from "next-themes";
 import { useMessagesContext } from "../contexts/MessagesContextProvider";
 import { createMessageWithFiles, updateMessage } from "../actions";
 import useTypingUsers from "../hooks/useTypingUsers";
 import { useRouter } from "next/navigation";
-const BASE_WS_URL = process.env.NEXT_PUBLIC_BASE_WS_URL;
+import Editor from "@/features/common/components/Editor";
+import useSWR from "swr";
+import { Editor as TipTapEditor, JSONContent } from "@tiptap/react";
+import getMentionedUsersIds from "@/features/common/lib/getMentionedUsersIds";
 
 type Props = {
     chatId?: number;
+    enableMentions?: boolean;
     userId?: number;
     editedMessage: Message | null;
     replyMessage: Message | null;
     unselectMessage: () => void;
 }
 
-const ChatInput: React.FC<Props> = ({ chatId, userId, editedMessage, replyMessage, unselectMessage }) => {
+const ChatInput: React.FC<Props> = ({ chatId, enableMentions, userId, editedMessage, replyMessage, unselectMessage }) => {
 
     const { data: session } = useSession();
     const [message, setMessage] = useState(editedMessage?.content || "");
+    const [messageJson, setMessageJson] = useState(() => editedMessage?.contentJson ? JSON.parse(editedMessage?.contentJson) : null);
     const [isEmojiMenuOpen, setIsEmojiMenuOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
     const [isRecorderOpen, setIsRecorderOpen] = useState(false);
-    const stompClient = useRef<Client | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement | null>(null);
     const [typing, setTyping] = useState(false);
     const typingTimeout = useRef<NodeJS.Timeout>(null);
     const pickerRef = useRef<HTMLDivElement>(null);
     const { theme } = useTheme();
     const router = useRouter();
-    const { mutateAfter, mutateBefore, paginatedDataAfter, paginatedDataBefore, hasMoreAfter } = useMessagesContext() as MessagesContextType;
+    const { mutateAfter, mutateBefore, paginatedDataAfter, paginatedDataBefore, hasMoreAfter } = useMessagesContext() ;
     const { startTyping, stopTyping } = useTypingUsers(chatId);
+    const { data: members } = useSWR<Member[]>(chatId ? `/api/members?chatId=${chatId}` : null);
+    const mentionsSuggestions = useMemo(() => members?.map(member => {
+        if (member.user.id.toString() === session?.user?.id) return { id: "everyone", label: "everyone", image: "/group_image.webp" };
+        return { id: member.user.id.toString(), label: member.user.username, image: member.user.image };
+    }), [members, session?.user?.id]);
+    const editorRef = useRef<TipTapEditor>(null);
 
     const hadleSubmit = () => {
-        if (!message) return;
+        if (!message || !messageJson) return;
         startTransition(async () => {
+            const mentionedUsersIds = getMentionedUsersIds(messageJson);
             if (editedMessage) {
                 if (paginatedDataAfter) {
-                    mutateAfter(updateMessageMutation(editedMessage.id, { content: message }, paginatedDataAfter), {
+                    mutateAfter(updateMessageMutation(editedMessage.id, { content: message, contentJson: JSON.stringify(messageJson) }, paginatedDataAfter), {
                         revalidate: false,
                         populateCache: true,
                         rollbackOnError: true,
                     });
                 }
                 else if (paginatedDataBefore) {
-                    mutateBefore(updateMessageMutation(editedMessage.id, { content: message }, paginatedDataBefore), {
+                    mutateBefore(updateMessageMutation(editedMessage.id, { content: message, contentJson: JSON.stringify(messageJson) }, paginatedDataBefore), {
                         revalidate: false,
                         populateCache: true,
                         rollbackOnError: true,
@@ -66,14 +76,22 @@ const ChatInput: React.FC<Props> = ({ chatId, userId, editedMessage, replyMessag
                 const newMessage = { 
                     userId,
                     chatId,
-                    content: message, 
+                    content: message,
+                    contentJson: JSON.stringify(messageJson),
                     messageType: "TEXT", 
-                    replyMessageId: replyMessage?.id
+                    replyMessageId: replyMessage?.id,
+                    isEveryoneMentioned: mentionedUsersIds.has("everyone"),
+                    mentionedUsersIds: [...mentionedUsersIds].filter(userId => userId !== "everyone"),
                 };
                 const formData = new FormData();
                 formData.append("message", new Blob([JSON.stringify(newMessage)], { type: "application/json" }));
                 const createdMessage = await createMessageWithFiles(formData);
-                if (hasMoreAfter) return;
+                if (hasMoreAfter) {
+                    unselectMessage();
+                    setMessage("");
+                    setMessageJson(null);
+                    return;
+                }
                 if (paginatedDataAfter) {
                     mutateAfter(createMessageMutationAfter(paginatedDataAfter, createdMessage), {
                         revalidate: false,
@@ -97,12 +115,14 @@ const ChatInput: React.FC<Props> = ({ chatId, userId, editedMessage, replyMessag
             }
             unselectMessage();
             setMessage("");
+            setMessageJson(null);
         });
     }
 
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setMessage(e.target.value);
-        if (!typing) {
+    const handleChange = (value: string, valueJson: JSONContent) => {
+        setMessage(value);
+        setMessageJson(valueJson);
+        if (!typing && value) {
             startTyping();
             setTyping(true);
         }
@@ -114,88 +134,6 @@ const ChatInput: React.FC<Props> = ({ chatId, userId, editedMessage, replyMessag
             setTyping(false);
         }, 1000);
     }
-
-    useEffect(() => {
-        if (!chatId || !session?.user?.accessToken) return;
-        stompClient.current = new Client({
-            brokerURL: BASE_WS_URL,
-            connectHeaders: {
-                "Authorization": `Bearer ${session?.user?.accessToken}`
-            },
-            onStompError: (e) => {
-                console.log(e);
-            }
-        });
-
-        stompClient.current.onConnect = () => {
-            const options = {
-                revalidate: false,
-                populateCache: true,
-                rollbackOnError: true,
-            }
-            stompClient.current?.subscribe(`/topic/chat.${chatId}.created-messages`, (message) => {
-                const newMessage: Message = JSON.parse(message.body);
-                if (newMessage.user?.id.toString() === session?.user?.id) return;
-                if (hasMoreAfter) return;
-                if (paginatedDataAfter) {
-                    mutateAfter(createMessageMutationAfter(paginatedDataAfter, newMessage), options);
-                }
-                else if (paginatedDataBefore) {
-                    mutateBefore(createMessageMutationBefore(paginatedDataBefore, newMessage), options);
-                }
-                else {
-                    mutateBefore([{ content: [newMessage], nextCursor: null, previousCursor: null }], { revalidate: false, populateCache: true, rollbackOnError: true });
-                } 
-            });
-
-            stompClient.current?.subscribe(`/topic/chat.${chatId}.edited-messages?userId=${session.user?.id}`, (message) => {
-                const updatedMessage = JSON.parse(message.body);
-                if (paginatedDataAfter) {
-                    mutateAfter(updateMessageMutation(updatedMessage.id, updatedMessage, paginatedDataAfter), options);
-                }
-                else if (paginatedDataBefore) {
-                    mutateBefore(updateMessageMutation(updatedMessage.id, updatedMessage, paginatedDataBefore), options);
-                }
-            });
-
-            stompClient.current?.subscribe(`/topic/chat.${chatId}.edited-messages-batch?userId=${session.user?.id}`, (message) => {
-                const updatedMessages = JSON.parse(message.body);
-                if (paginatedDataAfter) {
-                    mutateAfter(batchUpdateMessagesMutation(updatedMessages, paginatedDataAfter), options);
-                }
-                else if (paginatedDataBefore) {
-                    mutateBefore(batchUpdateMessagesMutation(updatedMessages, paginatedDataBefore), options);
-                }
-            });
-
-
-            stompClient.current?.subscribe(`/topic/chat.${chatId}.deleted-messages`, (message) => {
-                const deletedMessageId = JSON.parse(message.body);
-                if (paginatedDataAfter) {
-                    mutateAfter(deleteMessageMutation(deletedMessageId, paginatedDataAfter), {
-                        revalidate: false,
-                        populateCache: true,
-                        rollbackOnError: true,
-                    });
-                }
-                else if (paginatedDataBefore) {
-                    mutateBefore(deleteMessageMutation(deletedMessageId, paginatedDataBefore), {
-                        revalidate: false,
-                        populateCache: true,
-                        rollbackOnError: true,
-                    });
-                }
-            });
-        };
-        
-        stompClient.current.activate();
-
-        return () => {
-            if (stompClient.current) {
-                stompClient.current.deactivate();
-            }
-        };
-    }, [mutateAfter, mutateBefore, paginatedDataAfter, paginatedDataBefore, hasMoreAfter, chatId, session?.user?.id, session?.user?.accessToken]);
 
     useEffect(() => {
         return () => {
@@ -214,6 +152,10 @@ const ChatInput: React.FC<Props> = ({ chatId, userId, editedMessage, replyMessag
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const handleEmojiClick = (e: EmojiClickData) => {
+        editorRef.current?.commands.insertContent(e.emoji);
+    }
+
     return (
         <div ref={messagesContainerRef} className="absolute bottom-0 w-full">
             {
@@ -230,9 +172,9 @@ const ChatInput: React.FC<Props> = ({ chatId, userId, editedMessage, replyMessag
                 <Recorder replyMessageId={replyMessage?.id} chatId={chatId} userId={userId} />
             }
             <div ref={pickerRef} className="w-fit z-10 relative">
-                <Picker theme={theme === "dark" ? Theme.DARK : Theme.AUTO} emojiStyle={EmojiStyle.NATIVE} open={isEmojiMenuOpen} onEmojiClick={e => setMessage(prevState => `${prevState}${e.emoji}`)} />
+                <Picker theme={theme === "dark" ? Theme.DARK : Theme.AUTO} emojiStyle={EmojiStyle.NATIVE} open={isEmojiMenuOpen} onEmojiClick={handleEmojiClick} />
             </div>
-            <form onSubmit={e => e.preventDefault()} className="flex items-center gap-2 w-full bg-background px-4 py-2">
+            <form onSubmit={e => e.preventDefault()} className="flex items-center justify-center gap-2 w-full bg-background px-4 py-2">
                 <MessageInputMenu userId={userId} chatId={chatId} replyMessageId={replyMessage?.id} disabled={isPending} />
                 <IconButton onClick={() => !isEmojiMenuOpen && setIsEmojiMenuOpen(true)} disabled={isPending}>
                     {
@@ -250,12 +192,9 @@ const ChatInput: React.FC<Props> = ({ chatId, userId, editedMessage, replyMessag
                         <FiMic size={22} className="text-primary" />
                     }
                 </IconButton>
-                <textarea 
-                    placeholder="Type a message..." 
-                    className="form-input m-0 grow h-11 max-h-44 resize-none" 
-                    value={message}
-                    onChange={handleChange}
-                />
+                <div className="flex-1 prose max-w-none dark:prose-invert prose-a:text-primary break-words text-wrap border-border-primary border-[1px] rounded-md">
+                    <Editor ref={editorRef} enableMentions={enableMentions} mentionSuggestions={mentionsSuggestions} editable valueJson={messageJson} value={message} handleChange={handleChange} />
+                </div>
                 <IconButton onClick={hadleSubmit} disabled={isPending}>
                     <FiSend size={22} className="text-primary" />
                 </IconButton>

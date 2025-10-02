@@ -57,7 +57,7 @@ type Chat = {
     otherUser: User | null;
     unreadMessagesCount: number;
     firstUnreadMessageId: Message["id"] | null;
-    lastMessage: LastMessage | null;
+    lastMessage: MessagePreview | null;
     name: string | null;
     description: string | null;
     image: string | null;
@@ -66,9 +66,10 @@ type Chat = {
     onlyAdminsCanInvite: boolean;
     onlyAdminsCanEditGroup: boolean;
     onlyAdminsCanPin: boolean;
+    isMentioned: boolean;
 }
 
-type LastMessage = {
+type MessagePreview = {
     id: Message["id"];
     user: Message["user"]
     messageType: Message["messageType"];
@@ -79,6 +80,7 @@ type LastMessage = {
     duration: Message["duration"];
     originalFileName: Message["originalFileName"];
     attachmentsCount: number | null;
+    fileSize: Message["fileSize"];
 }
 
 type Group = Chat & {
@@ -98,14 +100,15 @@ type Message = {
     messageType: MessageType;
     reacts: MessageReact[];
     content: string | null;
+    contentJson: string | null;
     attachments: Attachment[];
     story?: Story;
     expiresAt: Date | null;
-    seen: boolean;
+    isSeen: boolean;
     pinned: boolean;
     starred: boolean;
-    forwarded: boolean;
-    edited: boolean;
+    isForwarded: boolean;
+    isEdited: boolean;
     missed: boolean | null;
     duration: number | null;
     fileUrl: string | null;
@@ -115,8 +118,14 @@ type Message = {
     multiple: boolean | null;
     endsAt: Date | null;
     title: string | null;
-    replyMessage: Message | null;
-    invite: Invite | null; 
+    replyMessage: MessagePreview | null;
+    invite: Invite | null;
+    mentions: Mention[];
+}
+
+type Mention = {
+    id: number;
+    user: User;
 }
 
 type Invite = {
@@ -224,8 +233,15 @@ type MessagesContextType = {
     messages: Message[];
     isError: boolean;
     isLoading: boolean;
+    lastMessageId?: number;
     mutateAfter: import("swr/infinite").SWRInfiniteKeyedMutator<CursorResponse<Message>[]>;
     mutateBefore: import("swr/infinite").SWRInfiniteKeyedMutator<CursorResponse<Message>[]>;
     setAfterSize: (size: number | ((_size: number) => number)) => Promise<CursorResponse<Message>[] | undefined>;
     setBeforeSize: (size: number | ((_size: number) => number)) => Promise<CursorResponse<Message>[] | undefined>;
+}
+
+type MentionSuggestion = {
+    id: string;
+    label: string;
+    image: string;
 }

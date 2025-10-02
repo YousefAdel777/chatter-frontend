@@ -13,7 +13,6 @@ import inviteSchema, { InviteSchema } from "@/features/chats/schemas/inviteSchem
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createInvite } from "@/features/invites/actions";
 import { createMessages } from "@/features/messages/actions";
-const BASE_URL = window.location.host;
 import InviteUrlModal from "./InviteUrlModal";
 
 type Props = {
@@ -83,7 +82,7 @@ const InviteModal: React.FC<Props> = ({ inviteChatId, closeModal }) => {
                 }
             }
             if (data.canUseLink) {
-                setInviteUrl(`${BASE_URL}/invites/${res.id}`);
+                setInviteUrl(`${window.location.host}/invites/${res.id}`);
             }
             else {
                 closeModal();

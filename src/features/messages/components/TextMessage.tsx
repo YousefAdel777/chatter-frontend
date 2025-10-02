@@ -1,5 +1,4 @@
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import Editor from "@/features/common/components/Editor";
 
 type Props = {
     message: Message;
@@ -9,9 +8,10 @@ const TextMessage: React.FC<Props> = ({ message }) => {
 
     return (
         <div className="prose dark:prose-invert prose-a:text-primary break-words text-wrap">
-            <Markdown rehypePlugins={[remarkGfm]}>
+            {/* <Markdown rehypePlugins={[remarkGfm]}>
                 {message.content}
-            </Markdown>
+            </Markdown> */}
+            <Editor mentions={message.mentions} value={message.content || ""} valueJson={message.contentJson ? JSON.parse(message.contentJson) : null}  />
         </div>
     );
 }

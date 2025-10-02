@@ -49,7 +49,7 @@ const ExcludedUsersModal: React.FC<Props> = ({ excludedUsersIds, closeModal, tog
                 </div>
                 :
                 <div>
-                    <div className="max-h-64 overflow-y-auto">
+                    <div className="min-h-64 max-h-64 overflow-y-auto">
                         {
                             users?.map(user => (
                                 user &&

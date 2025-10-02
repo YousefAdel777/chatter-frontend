@@ -278,7 +278,7 @@ export const markChatMessagesAsReadMutationOptions = (chatId: number, messagesDa
         return {
             ...messages,
             content: messages.content.map(message => {
-                if (!message.seen && message.chatId === chatId && message.user?.id === userId) {
+                if (!message.isSeen && message.chatId === chatId && message.user?.id === userId) {
                     return {
                         ...message,
                         seen: true,

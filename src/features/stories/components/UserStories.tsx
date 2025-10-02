@@ -1,9 +1,9 @@
 import Avatar from "@/features/common/components/Avatar";
 import { formatDate, getFormattedHours } from "@/features/common/lib/utils";
-// import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import StoriesModal from "./StoriesModal";
+import { useSession } from "next-auth/react";
 
 type Props = {
     stories: Story[];
@@ -12,15 +12,11 @@ type Props = {
 const UserStories: React.FC<Props> = ({ stories }) => {
 
     const user = stories[0].user;
-    // const { data: session } = useSession();
+    const { data: session } = useSession();
     const [showStoriesModal, setShowStoriesModal] = useState(false);
-    // const viewed = useMemo(() => {
-    //     for (const story of stories) {
-    //         if (story.user.id.toString() === session?.user?.id) {
-    //             return true;
-    //         }
-    //     }
-    // }, [stories, session?.user?.id]);
+    const viewed = useMemo(() => {
+        return stories.every(story => story.isViewed || story.user.id.toString() === session?.user?.id);
+    }, [stories, session?.user?.id]);
 
     return (
         <>
@@ -36,7 +32,7 @@ const UserStories: React.FC<Props> = ({ stories }) => {
                     size={50}
                     alt={user.username}
                     image={user.image}
-                    outline="#6b7280"
+                    outline={!viewed}
                 />
                 <div className="text-sm text-muted">
                     <p className="font-semibold">{user.username}</p>

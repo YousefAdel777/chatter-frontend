@@ -7,6 +7,7 @@ import { useMessagesContext } from "../contexts/MessagesContextProvider";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { formatDate } from "@/features/common/lib/utils";
 import { batchCreateMessageReads } from "../actions";
+import ScrollToEndButton from "./ScrollToEndButton";
 
 type Props = {
     chat?: Chat;
@@ -31,8 +32,11 @@ const GroupedMessages: React.FC<Props> = ({ chat, member, setReplyMessage, setEd
     const messageId = searchParams.get("messageId");
     const [highlightedMessageId, setHighlightedMessageId] = useState<Message["id"] | null>(null);
     const [firstUnreadId, setFirstUnreadId] = useState<Message["id"] | null>(null);
+    const [viewedMessagesIdsToRead, setViewedMessagesIdsToRead] = useState<Set<number>>(new Set());
     const [viewedMessagesIds, setViewedMessagesIds] = useState<Set<number>>(new Set());
-    const { dataBeforeJump, messages, hasMoreAfter, hasMoreBefore, isLoading, isError, setAfterSize, setBeforeSize } = useMessagesContext() as MessagesContextType;
+    const { lastMessageId, dataBeforeJump, messages, hasMoreAfter, hasMoreBefore, isLoading, isError, setAfterSize, setBeforeSize } = useMessagesContext();
+    const [showScrollToEndButton, setShowScrollToEndButton] = useState(false);
+    const endReached = useMemo(() => lastMessageId && messages.length && lastMessageId === messages[messages.length - 1].id, [lastMessageId, messages]);
 
     const groupMessagesByDate = useCallback((data: Message[]) => {
         return data.reduce((acc: GroupedMessageItem[], message, index) => {
@@ -52,24 +56,6 @@ const GroupedMessages: React.FC<Props> = ({ chat, member, setReplyMessage, setEd
         const data = dataBeforeJump?.flatMap(page => page.content);
         return isLoading && data?.length ? groupMessagesByDate(data) : groupMessagesByDate(messages);
     }, [messages, isLoading, dataBeforeJump, groupMessagesByDate]);
-
-    // Group messages by date
-//     const { flatMessages, groupedMessages, groupCounts, labels } = useMemo(() => {
-//       if (!messages?.length) return { groupedMessages: [], groupCounts: [] };
-//       const grouped = Object.groupBy(messages, (msg) => formatDate(msg.createdAt));
-//       const labels = Object.keys(grouped);
-//       const counts = labels.map((label) => grouped[label]?.length || 0);
-//       const flat = labels.flatMap((label) => grouped[label]);
-  
-//       return { groupedMessages: grouped, groupCounts: counts, flatMessages: flat, labels };
-//   }, [messages]);
-
-    // const firstItemIndex = useMemo(() => {
-    //     if (flatMessages?.length !== undefined) {
-    //       return 100000 - flatMessages.length;
-    //     }
-    //     // return Math.max(0, 100000 - (flatMessages?.length || 0));
-    // }, [flatMessages?.length]);
 
     const messageIndex = useMemo(() => {
         if (messageId) {
@@ -116,6 +102,7 @@ const GroupedMessages: React.FC<Props> = ({ chat, member, setReplyMessage, setEd
     const clearMessageId = useCallback(() => {
         const params = new URLSearchParams(searchParams.toString());
         params.delete("messageId");
+        params.delete("forceFetch");
         router.replace(`${pathname}?${params.toString()}`);
     }, [searchParams, router, pathname]);
 
@@ -145,24 +132,54 @@ const GroupedMessages: React.FC<Props> = ({ chat, member, setReplyMessage, setEd
 
     useEffect(() => {
         let timeout: NodeJS.Timeout;
-        if (viewedMessagesIds.size > 0) {
+        if (viewedMessagesIdsToRead.size) {
             timeout = setTimeout(() => {
-                batchCreateMessageReads([...viewedMessagesIds]);
+                batchCreateMessageReads([...viewedMessagesIdsToRead]);
             }, 500);
         }
         return () => {
             clearTimeout(timeout);
         }
-    }, [viewedMessagesIds]);
+    }, [viewedMessagesIdsToRead]);
 
-    const handleMessageView = useCallback((messageId: number) => {
-        if (viewedMessagesIds.has(messageId)) return;
-        setViewedMessagesIds(prev => new Set([...prev, messageId]));
+    const handleMessageView = useCallback((id: number) => {
+        if (viewedMessagesIds.has(id)) return;
+        setViewedMessagesIds(prev => new Set([...prev, id]));
+        setViewedMessagesIdsToRead(prev => new Set([...prev, id]));
         // setViewedMessagesIds(prev => {
         //     if (prev.has(messageId)) return prev;
         //     return new Set([...prev, messageId]);
         // });
     }, [viewedMessagesIds]);
+
+    const handleScroll = (e: React.MouseEvent<HTMLDivElement>) => {
+        const bottomScroll = e.currentTarget.scrollHeight - e.currentTarget.scrollTop - e.currentTarget.clientHeight;
+        if (lastMessageId && messages.length && lastMessageId !== messages[messages.length - 1].id) return;
+        // if (chat?.lastMessage && messages.length && chat.lastMessage.id !== messages[messages.length - 1].id) return;
+        if (bottomScroll > 500) {
+            setShowScrollToEndButton(true);
+        }
+        else {
+            setShowScrollToEndButton(false);
+        }
+    }
+
+    const handleJump = () => {
+        if (lastMessageId && messages.length && lastMessageId !== messages[messages.length - 1].id) {
+            const params = new URLSearchParams(searchParams.toString())
+            // params.set("messageId", chat.lastMessage.id.toString());
+            params.set("messageId", lastMessageId.toString());
+            params.set("forceFetch", Number(1).toString());
+            router.replace(`${pathname}?${params.toString()}`);
+        }
+        else {
+            virtuosoRef.current?.scrollToIndex({ index: "LAST" });
+        }
+    }
+
+    const addViewedMessagesIds = (messagesIds: number[]) => {
+        setViewedMessagesIds(prev => new Set([...prev, ...messagesIds]));
+    }
 
     return (
         <>
@@ -176,33 +193,40 @@ const GroupedMessages: React.FC<Props> = ({ chat, member, setReplyMessage, setEd
                 !groupedMessages?.length ?
                 <NoMessages />
                 :
-                <Virtuoso
-                    className="relative"
-                    ref={virtuosoRef}
-                    style={{ height: "80svh" }}
-                    data={groupedMessages}
-                    alignToBottom
-                    firstItemIndex={Number.MAX_SAFE_INTEGER - groupedMessages.length - 1}
-                    initialTopMostItemIndex={messageIndex !== null ? messageIndex : { index: "LAST" }}
-                    endReached={loadMoreAfter}
-                    startReached={loadMoreBefore}
-                    increaseViewportBy={200}
-                    itemContent={(_, item) => {
-                        if (item.type === "date-header") {
-                            return (
-                                <div className="text-center text-sm font-semibold p-1.5 sticky top-0 bg-background-secondary w-fit mx-auto rounded-lg my-1 text-muted z-10">
-                                    {item.date}
-                                </div>
-                            );
-                        }
-                        return <Message onView={() => handleMessageView(item.data.id)} member={member} firstUnread={firstUnreadId === item.data.id} highlighted={highlightedMessageId === item.data.id} chat={chat} message={item.data} setEditedMessage={setEditedMessage} setReplyMessage={setReplyMessage} />;
-                    }}
-                    components={{ 
-                        Footer: () => hasMoreAfter ? <Loading /> : null,
-                        Header: () => hasMoreBefore ? <Loading /> : null,
-                    }}
-                />
-
+                <div className="relative">
+                    <Virtuoso
+                        className="relative"
+                        ref={virtuosoRef}
+                        onScroll={handleScroll}
+                        style={{ height: "80svh" }}
+                        data={groupedMessages}
+                        alignToBottom
+                        firstItemIndex={Number.MAX_SAFE_INTEGER - groupedMessages.length - 1}
+                        // initialTopMostItemIndex={messageIndex || groupedMessages.length - 1}
+                        initialTopMostItemIndex={messageIndex !== null ? messageIndex : { index: "LAST" }}
+                        endReached={loadMoreAfter}
+                        startReached={loadMoreBefore}
+                        increaseViewportBy={200}
+                        itemContent={(_, item) => {
+                            if (item.type === "date-header") {
+                                return (
+                                    <div className="text-center text-sm font-semibold p-1.5 sticky top-0 bg-background-secondary w-fit mx-auto rounded-lg my-1 text-muted">
+                                        {item.date}
+                                    </div>
+                                );
+                            }
+                            return <Message onView={() => handleMessageView(item.data.id)} member={member} firstUnread={firstUnreadId === item.data.id} highlighted={highlightedMessageId === item.data.id} chat={chat} message={item.data} setEditedMessage={setEditedMessage} setReplyMessage={setReplyMessage} />;
+                        }}
+                        components={{ 
+                            Footer: () => hasMoreAfter ? <Loading /> : null,
+                            Header: () => hasMoreBefore ? <Loading /> : null,
+                        }}
+                    />
+                    {
+                        (showScrollToEndButton || !endReached) &&
+                        <ScrollToEndButton chatId={chat?.id} viewedMessagesIds={viewedMessagesIds} addViewedMessagesIds={addViewedMessagesIds} handleJump={handleJump} />
+                    }
+                </div>
             }
         </>
     );

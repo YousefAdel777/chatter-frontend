@@ -42,7 +42,7 @@ const StoriesContainer: React.FC<Props> = ({ stories, userStories }) => {
                 </h2>
                 <div className="relative">
                     <MenuButton isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen}>
-                        <FiPlus className={clsx("text-primary hover:bg-background-secondary rounded-full duration-200", { "rotate-45" : isMenuOpen })} size={25} />
+                        <FiPlus className={clsx("text-primary rounded-full duration-200", { "rotate-45" : isMenuOpen })} size={25} />
                     </MenuButton>
                     {
                         isMenuOpen && 

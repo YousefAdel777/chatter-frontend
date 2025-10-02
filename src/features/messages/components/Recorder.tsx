@@ -26,7 +26,7 @@ const Recorder: React.FC<Props> = ({ chatId, userId, replyMessageId }) => {
     const [, setWaveSurfer] = useState<WaveSurfer>();
     const [recordPlugin, setRecordPlugin] = useState<RecordPlugin>();
     const [isPending, startTransition] = useTransition();
-    const { paginatedDataAfter, paginatedDataBefore, mutateAfter, mutateBefore } = useMessagesContext() as MessagesContextType;
+    const { paginatedDataAfter, paginatedDataBefore, mutateAfter, mutateBefore } = useMessagesContext() ;
 
     useEffect(() => {
         if (!micContainerRef.current) return;

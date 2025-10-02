@@ -41,7 +41,7 @@ const StoriesProgressBar: React.FC<Props> = ({ count, time, index, paused, handl
                 countArray.map((_, i) => (
                     <span className="relative h-2 rounded-md w-full bg-black/50" key={i}>
                         <span 
-                            className="absolute duration-200 left-0 top-0 h-full bg-background rounded-md"
+                            className="absolute duration-200 left-0 top-0 h-full bg-white rounded-md"
                             style={{ width: index > i ? "100%" : index < i ? "0%" : `${(timePassed / time) * 100}%` }}
                         />
                     </span>

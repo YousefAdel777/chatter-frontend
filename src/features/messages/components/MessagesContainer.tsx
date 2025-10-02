@@ -24,6 +24,7 @@ const MessagesContainer: React.FC<Props> = ({ chat, member, userId, isBlocked })
     const isAdmin = member?.memberRole === "ADMIN" || member?.memberRole === "OWNER";
     const searchParams = useSearchParams();
     const messageId = searchParams.get("messageId");
+    const forceFetch = searchParams.get("forceFetch");
 
     const unselectMessage = () => {
         setReplyMessage(null);
@@ -31,8 +32,11 @@ const MessagesContainer: React.FC<Props> = ({ chat, member, userId, isBlocked })
     }
 
     return (
-        <MessagesContextProvider 
+        <MessagesContextProvider
+            forceFetch={Boolean(forceFetch)}
             disabled={!chat?.id}
+            chatId={chat?.id}
+            initialLastMessageId={chat?.lastMessage?.id}
             jumpMessageId={messageId ? Number.parseInt(messageId) : undefined}
             url={`/api/messages?chatId=${chat?.id}&search=${debouncedSearch}&pinned=${pinned || ""}&starred=${starred || ""}&messageType=${messageType || ""}`}
         >
@@ -54,6 +58,7 @@ const MessagesContainer: React.FC<Props> = ({ chat, member, userId, isBlocked })
                     </div>
                     :
                     <ChatInput
+                        enableMentions={chat?.chatType === "GROUP"}
                         chatId={chat?.id}
                         userId={userId}
                         editedMessage={editedMessage} 

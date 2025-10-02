@@ -24,7 +24,7 @@ const PollModal: React.FC<Props> = ({ closeModal, userId, chatId, replyMessageId
 
     const [errorMessage, setErrorMessage] = useState("");
     const [isPending, startTransition] = useTransition();
-    const { paginatedDataAfter, paginatedDataBefore, mutateAfter, mutateBefore, hasMoreAfter } = useMessagesContext() as MessagesContextType;
+    const { paginatedDataAfter, paginatedDataBefore, mutateAfter, mutateBefore, hasMoreAfter } = useMessagesContext() ;
 
     const {
         register,

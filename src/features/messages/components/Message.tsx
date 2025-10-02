@@ -39,7 +39,7 @@ const Message: React.FC<Props> = ({ highlighted, firstUnread, message, chat, mem
     const isCurrentUser = session?.user?.id === message.user?.id.toString();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { ref, inView } = useInView({ threshold: 0 });
-
+    
     const findUserReactId = (reacts: MessageReact[], userId?: string) => {
         return reacts.find(react => react.user.id.toString() === userId)?.id;
     }
@@ -51,10 +51,10 @@ const Message: React.FC<Props> = ({ highlighted, firstUnread, message, chat, mem
     }
 
     useEffect(() => {
-        if (inView && !message.seen && message.user?.id.toString() !== session?.user?.id) {
+        if (inView && !message.isSeen && message.user?.id.toString() !== session?.user?.id) {
             onView();
         }
-    }, [inView, onView, message.user?.id, message.seen, session?.user?.id]);
+    }, [inView, onView, message.user?.id, message.isSeen, session?.user?.id]);
 
     return (
             <div   ref={ref} className={clsx("flex flex-wrap items-start gap-3 mx-2 duration-100 p-1.5 rounded-md", {
@@ -124,14 +124,14 @@ const Message: React.FC<Props> = ({ highlighted, firstUnread, message, chat, mem
                     }
                     <div className="flex items-center gap-3 mt-1">
                         {
-                            message.forwarded &&
+                            message.isForwarded &&
                             <div className="font-bold italic text-muted flex items-center gap-2">
                                 <ImForward size={12} />
                                 <p className="text-xs">Forwarded</p>
                             </div>
                         }
                         {
-                            message.edited &&
+                            message.isEdited &&
                             <div className="font-bold italic text-muted flex items-center gap-2">
                                 <FaEdit size={12} />
                                 <p className="text-xs">Edited</p>
@@ -155,7 +155,7 @@ const Message: React.FC<Props> = ({ highlighted, firstUnread, message, chat, mem
                             !isCurrentUser || chat?.chatType === "GROUP" ?
                             null
                             :
-                            message.seen ?
+                            message.isSeen ?
                             <FaCheckDouble className="text-primary" />
                             :
                             <FaCheck className="text-muted" />

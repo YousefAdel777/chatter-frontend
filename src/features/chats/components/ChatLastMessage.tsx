@@ -1,40 +1,23 @@
 import { formatCallDuration } from "@/features/common/lib/utils";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
 import { FaEnvelope, FaFile, FaImage, FaPhone, FaPoll } from "react-icons/fa";
 import { HiSpeakerWave } from "react-icons/hi2";
-import { remark } from "remark";
-import remarkParse from "remark-parse";
-import strip from "strip-markdown";
 
 type Props = {
-    message: LastMessage;
+    message: MessagePreview;
 }
 
 const ChatLastMessage: React.FC<Props> = ({ message }) => {
 
     const { data: session } = useSession();
-    const [strippedContent, setStrippedContent] = useState("");
-
-    useEffect(() => {
-        const stripContent = async () => {
-            if (!message.content) {
-                setStrippedContent("");
-                return;
-            };
-            const result = await remark().use(remarkParse).use(strip).process(message.content);
-            setStrippedContent(result.toString());
-        }
-        stripContent();
-    }, [message.content]);
 
     return (
         <div className="text-xs md:max-w-48 text-muted truncate flex gap-2">
             <span>{message?.user?.id.toString() === session?.user?.id ? "You: " : `${message?.user?.username || "Deleted User"}: `}</span>
             {
-                strippedContent ?
-                <div className="truncate">
-                    {strippedContent}
+                message.content ?
+                <div className="truncate md:max-w-32 lg:max-w-none">
+                    {message.content}
                 </div>
                 :
                 message.messageType === "MEDIA" ?

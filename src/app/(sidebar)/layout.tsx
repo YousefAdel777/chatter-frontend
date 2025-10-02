@@ -4,7 +4,7 @@ import "@/app/globals.css";
 import Providers from "@/features/common/components/Providers";
 import Sidebar from "@/features/common/components/Sidebar";
 import fetcher from "@/features/common/lib/fetcher";
-import CallModal from "@/features/calls/components/CallModal";
+// import CallModal from "@/features/calls/components/CallModal";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -39,7 +39,7 @@ export default async function RootLayout({
             <Sidebar userStories={userStories} stories={stories} user={currentUser} chats={chats} />
             {children}
           </div>
-          <CallModal currentUser={currentUser} />
+          {/* <CallModal currentUser={currentUser} /> */}
         </Providers>
       </body>
     </html>

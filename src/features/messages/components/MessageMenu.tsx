@@ -36,7 +36,7 @@ const MessageMenu: React.FC<Props> = ({ chat, member, message, reactId, setReply
     const isAdmin = member?.memberRole === "ADMIN" || member?.memberRole === "OWNER";
     const pickerRef = useRef<HTMLDivElement | null>(null);
     const menuContainerRef = useRef<HTMLDivElement | null>(null);
-    const { mutateAfter, mutateBefore, paginatedDataAfter, paginatedDataBefore } = useMessagesContext() as MessagesContextType;
+    const { mutateAfter, mutateBefore, paginatedDataAfter, paginatedDataBefore } = useMessagesContext() ;
     const { theme } = useTheme();
     const canReply = !chat?.onlyAdminsCanSend || isAdmin;
 

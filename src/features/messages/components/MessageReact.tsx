@@ -15,7 +15,7 @@ type Props = {
 
 const MessageReact: React.FC<Props> = ({ reacts, messageId, emoji, reactsCount, reactId }) => {
     const { data: session } = useSession();
-    const { mutateAfter, mutateBefore, paginatedDataAfter, paginatedDataBefore } = useMessagesContext() as MessagesContextType;
+    const { mutateAfter, mutateBefore, paginatedDataAfter, paginatedDataBefore } = useMessagesContext() ;
     const hasReact = useMemo(() => reacts.some((react) => react.user.id.toString() === session?.user?.id), [reacts, session?.user?.id]);
 
     const handleReact = async () => {

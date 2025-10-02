@@ -6,14 +6,13 @@ type Props = {
     size?: number;
     className?: string;
     isOnline?: boolean;
-    outline?: string;
+    outline?: boolean;
     alt?: string;
     image?: string;
     onClick?: () => void;
 }
 
 const Avatar: React.FC<Props> = ({ size = 40, alt, image, className, isOnline, outline, onClick }) => {
-
     if (!image) {
         return;
     }
@@ -21,9 +20,9 @@ const Avatar: React.FC<Props> = ({ size = 40, alt, image, className, isOnline, o
     return (
         <div 
             onClick={onClick}
-            style={{ color: outline || "" }}
             className={clsx("relative rounded-full", {
-                "ring-2 ring-offset-2": outline
+                "ring-primary ring-offset-2 ring-[3px]": outline,
+                // "outline-red-500 outline-offset-1 outline-[3px]": outline,
             })}
         >
             <Image height={size} width={size} src={image} alt={alt || "Avatar image"} className={twMerge("rounded-full", className)} />

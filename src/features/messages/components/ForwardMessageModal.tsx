@@ -21,7 +21,7 @@ const ForwardMessageModal: React.FC<Props> = ({ message, closeModal }) => {
     const [search, setSearch] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
     const [isPending, startTransition] = useTransition();
-    const { mutateAfter, mutateBefore } = useMessagesContext() as MessagesContextType;
+    const { mutateAfter, mutateBefore } = useMessagesContext() ;
     const { debouncedValue } = useDebounce(search, 500);
     const { data: chats, isLoading, error } = useSWR<Chat[]>(`/api/chats?name=${debouncedValue}&description=${debouncedValue}`);
 

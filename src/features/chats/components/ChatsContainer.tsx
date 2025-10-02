@@ -7,9 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { FiPlus } from "react-icons/fi";
 import { createPortal } from "react-dom";
 import CreateGroupModal from "@/features/groups/components/GroupModal";
-import { Client } from "@stomp/stompjs";
-import { useSession } from "next-auth/react";
-const BASE_WS_URL = process.env.NEXT_PUBLIC_BASE_WS_URL;
+import { useStompContext } from "@/features/common/contexts/StompContextProvider";
 
 type Props = {
     initialData: Chat[];
@@ -17,11 +15,17 @@ type Props = {
 }
 
 const ChatsContainer: React.FC<Props> = ({ initialData, user }) => {
-
-    const { data: session } = useSession();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [chats, setChats] = useState(initialData);
-    const stompClient = useRef<Client | null>(null);
+    const { getClient } = useStompContext();
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     const sortChats = (chats: Chat[]) => {
         const sortedChats = chats?.sort((a, b) => {
@@ -35,36 +39,20 @@ const ChatsContainer: React.FC<Props> = ({ initialData, user }) => {
     const sortedChats = useMemo(() => sortChats(chats), [chats]);
 
     useEffect(() => {
-        if (!session?.user?.accessToken) return;
-        stompClient.current = new Client({
-            brokerURL: BASE_WS_URL,
-            connectHeaders: {
-                "Authorization": `Bearer ${session?.user?.accessToken}`,
-            },
-            onConnect: () => {
-                stompClient.current?.subscribe(`/topic/users.${user.id}.created-chats`, (message) => {
-                    const chat = JSON.parse(message.body);
-                    setChats(prevState => [chat, ...prevState]);
-                });
+        const stompClient = getClient();
+        if (!stompClient?.connected) return;
 
-                stompClient.current?.subscribe(`/topic/users.${user.id}.deleted-chats`, (message) => {
-                    const chatId = JSON.parse(message.body);
-                    setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
-                });
-
-                stompClient.current?.subscribe(`/topic/users.${user.id}.updated-chats`, (message) => {
-                    const chat = JSON.parse(message.body);
-                    setChats(prevChats => prevChats.map(prevChat => prevChat.id === chat.id ? chat : prevChat));
-                });
-            }
-        })
-
-        stompClient.current?.activate();
-
-        return () => {
-            stompClient.current?.deactivate();
-        }
-    }, [session?.user?.accessToken, user.id]);
+        stompClient.subscribe(`/topic/users.${user.id}.deleted-chats`, (message) => {
+            if (!isMountedRef.current) return;
+            const chatId = JSON.parse(message.body);
+            setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
+        });
+        stompClient.subscribe(`/topic/users.${user.id}.updated-chats`, (message) => {
+            if (!isMountedRef.current) return;
+            const chat = JSON.parse(message.body);
+            setChats(prevChats => prevChats.map(prevChat => prevChat.id === chat.id ? chat : prevChat));
+        });
+    }, [user.id, getClient]);
 
     return (
         <div>

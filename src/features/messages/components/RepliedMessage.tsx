@@ -8,7 +8,7 @@ import remarkGfm from "remark-gfm";
 import { HiSpeakerWave } from "react-icons/hi2";
 
 type Props = {
-    message: Message;
+    message: MessagePreview;
 }
 
 const RepliedMessage: React.FC<Props> = ({ message }) => {
@@ -41,7 +41,7 @@ const RepliedMessage: React.FC<Props> = ({ message }) => {
                 message.messageType === "MEDIA" ?
                 <div className="flex items-center gap-3 text-muted font-semibold text-sm">
                     <FaImage size={18} />
-                    {message.attachments.length} Media {message.attachments.length === 1 ? "File" : "Files"}
+                    {message.attachmentsCount} Media {message.attachmentsCount === 1 ? "File" : "Files"}
                 </div>
                 :
                 message.messageType === "POLL" ?

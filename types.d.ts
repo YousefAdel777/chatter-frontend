@@ -1,5 +1,4 @@
 declare module '@toast-ui/react-image-editor';
-declare module 'react-audio-player-component';
 
 type PaginatedResponse<T> = {
     content: T[],
@@ -90,7 +89,7 @@ type Group = Chat & {
     membersCount: number;
 }
 
-type MessageType = "TEXT" | "MEDIA" | "AUDIO" | "FILE" | "INVITE" | "CALL" | "POLL" | "STORY";
+type MessageType = "TEXT" | "MEDIA" | "AUDIO" | "FILE" | "INVITE" | "CALL" | "POLL" | "STORY" | "GIF";
 
 type Message = {
     id: number;
@@ -121,6 +120,7 @@ type Message = {
     replyMessage: MessagePreview | null;
     invite: Invite | null;
     mentions: Mention[];
+    gifId: string;
 }
 
 type Mention = {
@@ -233,15 +233,107 @@ type MessagesContextType = {
     messages: Message[];
     isError: boolean;
     isLoading: boolean;
-    lastMessageId?: number;
+    lastMessageId: number | null;
     mutateAfter: import("swr/infinite").SWRInfiniteKeyedMutator<CursorResponse<Message>[]>;
     mutateBefore: import("swr/infinite").SWRInfiniteKeyedMutator<CursorResponse<Message>[]>;
     setAfterSize: (size: number | ((_size: number) => number)) => Promise<CursorResponse<Message>[] | undefined>;
     setBeforeSize: (size: number | ((_size: number) => number)) => Promise<CursorResponse<Message>[] | undefined>;
+    setLastMessageId: (id: number | null) => void; 
 }
 
 type MentionSuggestion = {
     id: string;
     label: string;
     image: string;
+}
+
+type UserInCall = User & {
+    isAudio: boolean;
+    isVideo: boolean;
+    isMuted: boolean;
+    isDeafened: boolean;
+    isMutedByAdmin: boolean;
+    isDeafenedByAdmin: boolean;
+    isHandRaised: boolean;
+    isAudioPaused: boolean;
+    isVideoPaused: boolean;
+    videoConsumerId?: string;
+    audioConsumerId?: string;
+    videoTrack?: MediaStreamTrack;
+    audioTrack?: MediaStreamTrack;
+    isScreenShare?: boolean;
+}
+
+type ScreenStream = {
+    user: User;
+    videoConsumerId?: string;
+    audioConsumerId?: string;
+    videoTrack?: MediaStreamTrack;
+    audioTrack?: MediaStreamTrack;
+    isAudio: boolean;
+    isVideo: boolean;
+    isMuted: boolean;
+    isMutedByAdmin: boolean;
+}
+
+type Call = {
+    user: User;
+    chatId: number;
+    callType: Chat["chatType"];
+}
+
+type ConsumerResult = {
+    user: User;
+    kind: string;
+    track: MediaStreamTrack;
+    isScreen: boolean;
+    consumerId: string;
+    stream?: ConsumerResultStream;
+}
+
+type ConsumerResultStream = {
+    isAudio: boolean;
+    isVideo: boolean;
+    isMutedByAdmin: boolean;
+}
+
+type GifPageResponse<T> = {
+    data: T[];
+    pagination: GifPagination;
+}
+
+type GifPagination = {
+    total_count: number;
+    offset: number;
+    count: number;
+}
+
+type GifCategory = {
+    name: string;
+    is_sticker: 0 | 1;
+    gif: Gif;
+}
+
+type Gif = {
+    id: string;
+    images: GifImages;
+    alt_text: string;
+}
+
+type GifImages = {
+    fixed_width_downsampled: GifImage;
+    fixed_width: GifImage;
+}
+
+type GifImage = {
+    url: string;
+    width: number;
+    height: number;
+}
+
+type FavoriteGif = {
+    id: number;
+    gifId: string;
+    userId: number;
+    createdAt: Date;
 }
